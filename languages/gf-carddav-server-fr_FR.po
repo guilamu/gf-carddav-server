@@ -1,0 +1,177 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: GF CardDAV Server 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-14 00:00+0000\n"
+"PO-Revision-Date: 2026-06-14 19:37+0200\n"
+"Last-Translator: GitHub Copilot\n"
+"Language-Team: French\n"
+"Language: fr_FR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 3.9\n"
+"X-Domain: gf-carddav-server\n"
+
+msgid "GF CardDAV Server"
+msgstr "Serveur CardDAV GF"
+
+msgid "Authentication required"
+msgstr "Authentification requise"
+
+msgid "CardDAV Server"
+msgstr "Serveur CardDAV"
+
+msgid "Source"
+msgstr "Source"
+
+msgid "Choose which Gravity Forms form feeds the CardDAV directory."
+msgstr "Choisissez quel formulaire Gravity Forms alimente le repertoire CardDAV."
+
+msgid "Source form"
+msgstr "Formulaire source"
+
+msgid "Contact Field Mapping"
+msgstr "Correspondance des champs du contact"
+
+msgid "Map the core contact identity fields exported into each vCard."
+msgstr "Associez les champs d'identite du contact exportes dans chaque vCard."
+
+msgid "First name field"
+msgstr "Champ prenom"
+
+msgid "Last name field"
+msgstr "Champ nom"
+
+msgid "Email field"
+msgstr "Champ e-mail"
+
+msgid "Phone field"
+msgstr "Champ telephone"
+
+msgid "Classification"
+msgstr "Classification"
+
+msgid "Choose the fields used to group contacts and assign a shared vCard category."
+msgstr "Choisissez les champs utilises pour regrouper les contacts et attribuer une categorie vCard partagee."
+
+msgid "Union field"
+msgstr "Champ syndicat"
+
+msgid "Department field"
+msgstr "Champ service"
+
+msgid "vCard category"
+msgstr "Categorie vCard"
+
+msgid "Access"
+msgstr "Acces"
+
+msgid "Control who can authenticate against this CardDAV directory and whether requests are logged."
+msgstr "Controlez qui peut s'authentifier sur ce repertoire CardDAV et si les requetes sont journalisees."
+
+msgid "Authorized users"
+msgstr "Utilisateurs autorises"
+
+msgid "Enable request logging"
+msgstr "Activer la journalisation des requetes"
+
+msgid "User #%d"
+msgstr "Utilisateur n°%d"
+
+msgid "%1$d of %2$d selected"
+msgstr "%1$d sur %2$d selectionnes"
+
+msgid "Remove %s"
+msgstr "Retirer %s"
+
+msgid "Add"
+msgstr "Ajouter"
+
+msgid "Search by name or email to grant or remove access."
+msgstr "Recherchez par nom ou e-mail pour accorder ou retirer l'acces."
+
+msgid "Search users"
+msgstr "Rechercher des utilisateurs"
+
+msgid "Search users..."
+msgstr "Rechercher des utilisateurs..."
+
+msgid "Available users"
+msgstr "Utilisateurs disponibles"
+
+msgid "No matching users."
+msgstr "Aucun utilisateur correspondant."
+
+msgid "Gravity Forms is not active. The plugin stays loadable, but the CardDAV directory is in degraded mode until Gravity Forms is available."
+msgstr "Gravity Forms n'est pas actif. Le plugin reste chargeable, mais le repertoire CardDAV fonctionne en mode degrade tant que Gravity Forms n'est pas disponible."
+
+msgid "Select a form"
+msgstr "Selectionner un formulaire"
+
+msgid "Select every WordPress user allowed to authenticate against this CardDAV directory."
+msgstr "Selectionnez tous les utilisateurs WordPress autorises a s'authentifier sur ce repertoire CardDAV."
+
+msgid "Debug logs"
+msgstr "Journaux de debogage"
+
+msgid "Form #%d"
+msgstr "Formulaire n°%d"
+
+msgid "Not mapped"
+msgstr "Non associe"
+
+msgid "First name"
+msgstr "Prenom"
+
+msgid "Last name"
+msgstr "Nom"
+
+msgid "Email"
+msgstr "E-mail"
+
+msgid "Phone"
+msgstr "Telephone"
+
+msgid "Union"
+msgstr "Syndicat"
+
+msgid "Department"
+msgstr "Service"
+
+msgid "HTTPS required"
+msgstr "HTTPS requis"
+
+msgid "Forbidden"
+msgstr "Interdit"
+
+msgid "Gravity Forms unavailable"
+msgstr "Gravity Forms indisponible"
+
+msgid "GF Contacts"
+msgstr "Contacts GF"
+
+msgid "View GF CardDAV Server details"
+msgstr "Voir les details de GF CardDAV Server"
+
+msgid "View details"
+msgstr "Voir les details"
+
+msgid "See <a href=\"%s\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub releases</a> for changelog."
+msgstr "Voir les <a href=\"%s\" target=\"_blank\" rel=\"noopener noreferrer\">releases GitHub</a> pour le journal des modifications."
+
+msgid "Requires Gravity Forms:"
+msgstr "Necessite Gravity Forms :"
+
+msgid "%s or higher"
+msgstr "%s ou version superieure"
+
+msgid "Unable to rename the update folder. Please retry or update manually."
+msgstr "Impossible de renommer le dossier de mise a jour. Veuillez reessayer ou effectuer la mise a jour manuellement."
+
+msgid "Report a Bug"
+msgstr "Signaler un bug"
+
+msgid "Report a Bug (install Bug Reporter)"
+msgstr "Signaler un bug (installer Bug Reporter)"
