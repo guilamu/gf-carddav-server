@@ -35,11 +35,7 @@ jobs:
             --exclude='node_modules' \
             --exclude='.DS_Store' \
             --exclude='screenshot*.*' \
-            ./gf-carddav-server/ build/gf-carddav-server/
-
-          if [ -f ./gf-carddav-server/README.md ]; then
-            cp ./gf-carddav-server/README.md build/gf-carddav-server/README.md
-          fi
+            ./ build/gf-carddav-server/
 
           cd build
           zip -r ../gf-carddav-server.zip gf-carddav-server
