@@ -15,43 +15,128 @@ class GF_CardDAV_VCF {
     }
 
     public function build_vcard(array $entry) {
-        $settings    = $this->settings->get_settings();
-        $mapping     = isset($settings['mapping']) ? (array) $settings['mapping'] : array();
-        $first_name  = $this->normalize_first_name($this->get_entry_value($entry, isset($mapping['first_name']) ? $mapping['first_name'] : ''));
-        $last_name   = $this->normalize_last_name($this->get_entry_value($entry, isset($mapping['last_name']) ? $mapping['last_name'] : ''));
-        $email       = $this->get_entry_value($entry, isset($mapping['email']) ? $mapping['email'] : '');
-        $phone       = $this->normalize_phone($this->get_entry_value($entry, isset($mapping['phone']) ? $mapping['phone'] : ''));
-        $union       = $this->get_entry_value($entry, isset($mapping['union']) ? $mapping['union'] : '');
-        $department  = $this->get_entry_value($entry, isset($mapping['department']) ? $mapping['department'] : '');
-        $categories  = isset($settings['category']) ? trim((string) $settings['category']) : '';
-        $displayname = trim($first_name . ' ' . $last_name);
-
-        if ($displayname === '') {
-            $displayname = $email !== '' ? $email : 'gf-' . (int) $entry['id'];
-        }
+        $settings = $this->settings->get_settings();
+        $mapping  = isset($settings['mapping']) ? (array) $settings['mapping'] : array();
 
         $lines = array(
             'BEGIN:VCARD',
             'VERSION:4.0',
             'UID:' . $this->escape_text('gf-' . (int) $entry['id']),
-            'N:' . $this->escape_text($last_name) . ';' . $this->escape_text($first_name) . ';;;',
-            'FN:' . $this->escape_text($displayname),
         );
 
-        if ($email !== '') {
-            $lines[] = 'EMAIL:' . $this->escape_text($email);
+        $structured = array();
+        $simple_values = array();
+        $family_name = '';
+        $given_name  = '';
+
+        foreach ($mapping as $map_entry) {
+            if (! is_array($map_entry) || empty($map_entry['vcard'])) {
+                continue;
+            }
+
+            $catalog_key = $map_entry['vcard'];
+            $catalog_def = GF_CardDAV_VCard_Catalog::get($catalog_key);
+
+            if (! $catalog_def) {
+                continue;
+            }
+
+            // Support both old field_id (string) and new field_ids (array) format.
+            $field_ids = array();
+            if (isset($map_entry['field_ids']) && is_array($map_entry['field_ids'])) {
+                $field_ids = $map_entry['field_ids'];
+            } elseif (isset($map_entry['field_id']) && (string) $map_entry['field_id'] !== '') {
+                $field_ids = array( (string) $map_entry['field_id'] );
+            }
+
+            $separator = isset($map_entry['separator']) ? (string) $map_entry['separator'] : ' ';
+
+            $parts = array();
+            foreach ($field_ids as $fid) {
+                $v = $this->get_entry_value($entry, (string) $fid);
+                if ($v !== '') {
+                    $parts[] = $v;
+                }
+            }
+            $value = implode($separator, $parts);
+
+            if (! empty($catalog_def['normalize']) && method_exists($this, $catalog_def['normalize'])) {
+                $value = $this->{$catalog_def['normalize']}($value);
+            }
+
+            if ($catalog_key === 'name_family') {
+                $family_name = $value;
+            } elseif ($catalog_key === 'name_given') {
+                $given_name = $value;
+            }
+
+            $vcard_prop = $catalog_def['vcard_property'];
+
+            if ($catalog_def['vcard_index'] !== null) {
+                if (! isset($structured[$vcard_prop])) {
+                    $structured[$vcard_prop] = array();
+                }
+                $structured[$vcard_prop][$catalog_def['vcard_index']] = $value;
+            } else {
+                if ($value !== '') {
+                    $simple_values[$vcard_prop] = $value;
+                }
+            }
         }
 
-        if ($phone !== '') {
-            $lines[] = 'TEL;TYPE=cell:' . $this->escape_text($phone);
+        if ($family_name !== '' || $given_name !== '') {
+            $lines[] = 'N:' . $this->escape_text($family_name) . ';' . $this->escape_text($given_name) . ';;;';
         }
 
-        if ($union !== '' || $department !== '') {
-            $lines[] = 'ORG:' . $this->escape_text($union) . ';' . $this->escape_text($department);
+        foreach ($structured as $prop => $components) {
+            if ($prop === 'N') {
+                continue;
+            }
+
+            $count = GF_CardDAV_VCard_Catalog::get_structured_component_count($prop);
+            $parts = array();
+            $has_value = false;
+
+            for ($i = 0; $i < $count; $i++) {
+                $val = isset($components[$i]) ? $components[$i] : '';
+                $parts[] = $this->escape_text($val);
+                if ($val !== '') {
+                    $has_value = true;
+                }
+            }
+
+            if ($has_value) {
+                $lines[] = $prop . ':' . implode(';', $parts);
+            }
         }
 
-        if ($categories !== '') {
-            $lines[] = 'CATEGORIES:' . $this->escape_text($categories);
+        foreach ($simple_values as $prop => $value) {
+            if ($value !== '') {
+                $lines[] = $prop . ':' . $this->escape_text($value);
+            }
+        }
+
+        $displayname = trim($given_name . ' ' . $family_name);
+
+        if ($displayname === '') {
+            $email_value = isset($simple_values['EMAIL']) ? $simple_values['EMAIL'] : '';
+            $displayname = $email_value !== '' ? $email_value : 'gf-' . (int) $entry['id'];
+        }
+
+        $fn_index = null;
+        foreach ($lines as $i => $line) {
+            if (strpos($line, 'N:') === 0) {
+                $fn_index = $i + 1;
+                break;
+            }
+        }
+
+        $fn_line = 'FN:' . $this->escape_text($displayname);
+
+        if ($fn_index !== null) {
+            array_splice($lines, $fn_index, 0, array($fn_line));
+        } else {
+            $lines[] = $fn_line;
         }
 
         $timestamp = strtotime(isset($entry['date_updated']) ? $entry['date_updated'] : 'now');

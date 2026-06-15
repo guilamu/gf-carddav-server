@@ -10,7 +10,7 @@ Expose active Gravity Forms entries as a native CardDAV address book for DAVx5 a
 - Serve discovery, principal, collection, and direct contact endpoints for standard CardDAV clients.
 
 ## Configure Access
-- Choose the source form and map first name, last name, email, phone, union, and department fields.
+- Choose the source form and map first name, last name, email, phone, union, and department fields (supporting multiple fields per property).
 - Select which WordPress users can authenticate against the CardDAV directory.
 - Enable request logging when you need to troubleshoot client requests.
 
@@ -20,7 +20,7 @@ Expose active Gravity Forms entries as a native CardDAV address book for DAVx5 a
 - Update the plugin through GitHub releases directly from the WordPress admin area.
 
 ## Key Features
-- **Gravity Forms Mapping:** Export entry data through configurable field mappings, including compound sub-fields.
+- **Gravity Forms Mapping:** Export entry data through configurable field mappings, including compound sub-fields and combining multiple fields per property.
 - **Native CardDAV Routes:** Supports `.well-known/carddav`, PROPFIND, REPORT, and direct vCard downloads.
 - **Multilingual:** Works with WordPress localization and includes a French translation source file.
 - **Translation-Ready:** All user-facing strings use the `gf-carddav-server` text domain.
@@ -90,6 +90,9 @@ If Guilamu Bug Reporter is installed, use the **Report a Bug** link directly fro
 ```
 
 ## Changelog
+
+### 1.1.0 - 2026-06-15
+- **New:** Map multiple Gravity Forms fields to a single vCard property with a configurable join separator (space, comma, new line, or custom).
 
 ### 1.0.1 - 2026-06-15
 - **Fix:** "View Details" link on plugins page now works correctly (plugin information API result now survives WordPress core filter mutations).

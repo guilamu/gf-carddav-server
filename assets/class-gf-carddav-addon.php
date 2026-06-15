@@ -68,7 +68,7 @@ class GF_CardDAV_AddOn extends GFAddOn {
 	public function plugin_settings_fields() {
 		$settings_service = gf_carddav_server()->get_settings();
 		$settings = $settings_service->get_settings();
-		$field_choices = $settings_service->get_field_select_choices( (int) $settings['form_id'] );
+		$field_choices = $settings_service->get_field_choices( (int) $settings['form_id'] );
 
 		return array(
 			array(
@@ -86,65 +86,16 @@ class GF_CardDAV_AddOn extends GFAddOn {
 				),
 			),
 			array(
-				'title'       => esc_html__( 'Contact Field Mapping', 'gf-carddav-server' ),
-				'description' => esc_html__( 'Map the core contact identity fields exported into each vCard.', 'gf-carddav-server' ),
-				'class'       => 'gf-carddav-settings-section gf-carddav-settings-section--contact',
+				'title'       => esc_html__( 'Field Mapping', 'gf-carddav-server' ),
+				'description' => esc_html__( 'Add vCard properties and map them to Gravity Forms fields. No fields are mapped by default.', 'gf-carddav-server' ),
+				'class'       => 'gf-carddav-settings-section gf-carddav-settings-section--mapping',
 				'fields'      => array(
 					array(
-						'type'          => 'select',
-						'name'          => 'mapping_first_name',
-						'label'         => esc_html__( 'First name field', 'gf-carddav-server' ),
-						'choices'       => $field_choices,
-						'default_value' => (string) $settings['mapping']['first_name'],
-					),
-					array(
-						'type'          => 'select',
-						'name'          => 'mapping_last_name',
-						'label'         => esc_html__( 'Last name field', 'gf-carddav-server' ),
-						'choices'       => $field_choices,
-						'default_value' => (string) $settings['mapping']['last_name'],
-					),
-					array(
-						'type'          => 'select',
-						'name'          => 'mapping_email',
-						'label'         => esc_html__( 'Email field', 'gf-carddav-server' ),
-						'choices'       => $field_choices,
-						'default_value' => (string) $settings['mapping']['email'],
-					),
-					array(
-						'type'          => 'select',
-						'name'          => 'mapping_phone',
-						'label'         => esc_html__( 'Phone field', 'gf-carddav-server' ),
-						'choices'       => $field_choices,
-						'default_value' => (string) $settings['mapping']['phone'],
-					),
-				),
-			),
-			array(
-				'title'       => esc_html__( 'Classification', 'gf-carddav-server' ),
-				'description' => esc_html__( 'Choose the fields used to group contacts and assign a shared vCard category.', 'gf-carddav-server' ),
-				'class'       => 'gf-carddav-settings-section gf-carddav-settings-section--classification',
-				'fields'      => array(
-					array(
-						'type'          => 'select',
-						'name'          => 'mapping_union',
-						'label'         => esc_html__( 'Union field', 'gf-carddav-server' ),
-						'choices'       => $field_choices,
-						'default_value' => (string) $settings['mapping']['union'],
-					),
-					array(
-						'type'          => 'select',
-						'name'          => 'mapping_department',
-						'label'         => esc_html__( 'Department field', 'gf-carddav-server' ),
-						'choices'       => $field_choices,
-						'default_value' => (string) $settings['mapping']['department'],
-					),
-					array(
-						'type'          => 'text',
-						'name'          => 'category',
-						'label'         => esc_html__( 'vCard category', 'gf-carddav-server' ),
-						'default_value' => $settings['category'],
-						'class'         => 'medium',
+						'type'        => 'mapping_ui',
+						'name'        => 'mapping',
+						'label'       => esc_html__( 'vCard mapping', 'gf-carddav-server' ),
+						'mapping'     => $settings['mapping'],
+						'field_choices' => $field_choices,
 					),
 				),
 			),
@@ -176,6 +127,32 @@ class GF_CardDAV_AddOn extends GFAddOn {
 				),
 			),
 		);
+	}
+
+	public function settings_mapping_ui( $field ) {
+		$settings_service = gf_carddav_server()->get_settings();
+
+		/*
+		 * Read the mapping fresh rather than from the cached $field array.
+		 *
+		 * GF caches the plugin_settings_fields() return value early — before
+		 * processing the save — so $field['mapping'] still holds pre-save data
+		 * when the page is re-rendered after a successful save.
+		 *
+		 * On a POST (save), the authoritative mapping lives in $_POST; on a
+		 * normal GET it comes from the persisted settings.
+		 */
+		if ( isset( $_POST['_gaddon_setting_mapping'] ) && is_array( $_POST['_gaddon_setting_mapping'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			$current_mapping = $settings_service->sanitize_mapping_public( wp_unslash( $_POST['_gaddon_setting_mapping'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		} else {
+			$fresh_settings  = $settings_service->get_settings();
+			$current_mapping = $fresh_settings['mapping'];
+		}
+
+		$fresh_settings  = isset( $fresh_settings ) ? $fresh_settings : $settings_service->get_settings();
+		$field_choices   = $settings_service->get_field_choices( (int) $fresh_settings['form_id'] );
+
+		$settings_service->render_mapping_ui( $current_mapping, $field_choices, '_gaddon_setting_mapping' );
 	}
 
 	public function settings_authorized_users_picker( $field ) {
