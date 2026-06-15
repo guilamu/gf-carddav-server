@@ -91,6 +91,9 @@ If Guilamu Bug Reporter is installed, use the **Report a Bug** link directly fro
 
 ## Changelog
 
+### 1.0.1 - 2026-06-15
+- **Fix:** "View Details" link on plugins page now works correctly (plugin information API result now survives WordPress core filter mutations).
+
 ### 1.0.0 - 2026-06-14
 - **New:** Initial CardDAV server release for Gravity Forms entries.
 

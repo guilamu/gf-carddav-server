@@ -25,8 +25,48 @@ class GF_CardDAV_GitHub_Updater {
 	public static function init(): void {
 		add_filter( 'update_plugins_github.com', array( self::class, 'check_for_update' ), 10, 4 );
 		add_filter( 'plugins_api', array( self::class, 'plugin_info' ), 20, 3 );
+		add_filter( 'plugins_api_result', array( self::class, 'finalize_plugin_info' ), PHP_INT_MAX, 3 );
 		add_filter( 'upgrader_source_selection', array( self::class, 'fix_folder_name' ), 10, 4 );
 		add_action( 'admin_head', array( self::class, 'plugin_info_css' ) );
+	}
+
+	/**
+	 * Get the active plugin file path relative to the plugins directory.
+	 *
+	 * @return string
+	 */
+	private static function get_plugin_file(): string {
+		if ( defined( 'GF_CARDDAV_SERVER_FILE' ) ) {
+			$basename = plugin_basename( GF_CARDDAV_SERVER_FILE );
+			if ( is_string( $basename ) && '' !== $basename ) {
+				return $basename;
+			}
+		}
+
+		return self::PLUGIN_FILE;
+	}
+
+	/**
+	 * Get the active plugin directory relative to the plugins directory.
+	 *
+	 * @return string
+	 */
+	private static function get_plugin_directory(): string {
+		return dirname( self::get_plugin_file() );
+	}
+
+	/**
+	 * Check whether the current API request is asking for this plugin.
+	 *
+	 * @param string $action Requested action.
+	 * @param mixed  $args   API arguments.
+	 * @return bool
+	 */
+	private static function is_plugin_information_api_request( $action, $args ): bool {
+		return 'plugin_information' === $action
+			&& is_object( $args )
+			&& isset( $args->slug )
+			&& self::PLUGIN_SLUG === $args->slug;
 	}
 
 	private static function get_release_data(): ?array {
@@ -115,7 +155,7 @@ class GF_CardDAV_GitHub_Updater {
 	public static function check_for_update( $update, array $plugin_data, string $plugin_file, $locales ) {
 		unset( $locales );
 
-		if ( self::PLUGIN_FILE !== $plugin_file ) {
+		if ( self::get_plugin_file() !== $plugin_file ) {
 			return $update;
 		}
 
@@ -132,7 +172,7 @@ class GF_CardDAV_GitHub_Updater {
 		return array(
 			'id'            => 'github.com/' . self::GITHUB_USER . '/' . self::GITHUB_REPO,
 			'slug'          => self::PLUGIN_SLUG,
-			'plugin'        => self::PLUGIN_FILE,
+			'plugin'        => self::get_plugin_file(),
 			'new_version'   => $new_version,
 			'version'       => $new_version,
 			'package'       => self::get_package_url( $release_data ),
@@ -145,74 +185,136 @@ class GF_CardDAV_GitHub_Updater {
 		);
 	}
 
-	public static function plugin_info( $res, $action, $args ) {
-		if ( 'plugin_information' !== $action ) {
-			return $res;
+	/**
+	 * Rebuild the final plugin information object after all earlier filters.
+	 *
+	 * Some sites run additional plugins_api_result filters that mutate or
+	 * strip fields such as sections. Returning a fresh object at the highest
+	 * practical priority ensures WordPress core receives the expected shape.
+	 *
+	 * @param false|object|array $result Plugin API result.
+	 * @param string             $action Requested action.
+	 * @param object             $args   API arguments.
+	 * @return false|object|array
+	 */
+	public static function finalize_plugin_info( $result, $action, $args ) {
+		if ( ! self::is_plugin_information_api_request( $action, $args ) ) {
+			return $result;
 		}
 
-		if ( ! isset( $args->slug ) || self::PLUGIN_SLUG !== $args->slug ) {
-			return $res;
+		return self::get_safe_plugin_info_result();
+	}
+
+	/**
+	 * Build the plugin information object once and return a fresh clone.
+	 *
+	 * @return stdClass
+	 */
+	private static function get_safe_plugin_info_result(): stdClass {
+		static $plugin_info = null;
+
+		if ( $plugin_info instanceof stdClass ) {
+			return clone $plugin_info;
 		}
 
-		if ( ! function_exists( 'get_plugin_data' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		try {
+			$plugin_info = self::build_plugin_info_result();
+		} catch ( Throwable $throwable ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( sprintf(
+					'%s plugin details fallback: %s in %s:%d',
+					self::PLUGIN_NAME,
+					$throwable->getMessage(),
+					$throwable->getFile(),
+					$throwable->getLine()
+				) );
+			}
+
+			$plugin_info = self::build_fallback_plugin_info_result();
 		}
 
-		$plugin_file       = WP_PLUGIN_DIR . '/' . self::PLUGIN_FILE;
-		$plugin_data       = get_plugin_data( $plugin_file, false, false );
+		return clone $plugin_info;
+	}
+
+	/**
+	 * Build plugin information for the WordPress details modal.
+	 *
+	 * @return stdClass
+	 */
+	private static function build_plugin_info_result(): stdClass {
 		$release_data      = self::get_release_data();
-		$installed_version = isset( $plugin_data['Version'] ) ? (string) $plugin_data['Version'] : '1.0.0';
+		$installed_version = defined( 'GF_CARDDAV_SERVER_VERSION' ) ? GF_CARDDAV_SERVER_VERSION : '1.0.0';
 		$release_version   = ( $release_data && ! empty( $release_data['tag_name'] ) ) ? ltrim( (string) $release_data['tag_name'], 'v' ) : '';
 		$version           = $installed_version;
+		$has_update        = '' !== $release_version && version_compare( $release_version, $installed_version, '>' );
 
-		if ( '' !== $release_version && version_compare( $release_version, $installed_version, '>' ) ) {
+		if ( $has_update ) {
 			$version = $release_version;
 		}
 
-		$res               = new stdClass();
-		$res->name         = self::PLUGIN_NAME;
-		$res->slug         = self::PLUGIN_SLUG;
-		$res->plugin       = self::PLUGIN_FILE;
-		$res->version      = $version;
-		$res->author       = sprintf( '<a href="%1$s">%2$s</a>', esc_url( 'https://github.com/' . self::GITHUB_USER ), esc_html( self::GITHUB_USER ) );
-		$res->homepage     = sprintf( 'https://github.com/%s/%s', self::GITHUB_USER, self::GITHUB_REPO );
-		$res->requires     = self::REQUIRES_WP;
-		$res->tested       = get_bloginfo( 'version' );
-		$res->requires_php = self::REQUIRES_PHP;
-		$res->download_link = self::get_plugin_info_download_link( $release_data );
-		$res->banners      = array();
-		$res->icons        = array();
+		$result               = new stdClass();
+		$result->name         = self::PLUGIN_NAME;
+		$result->slug         = self::PLUGIN_SLUG;
+		$result->plugin       = self::get_plugin_file();
+		$result->version      = $version;
+		$result->author       = sprintf( '<a href="https://github.com/%s">%s</a>', self::GITHUB_USER, self::GITHUB_USER );
+		$result->homepage     = sprintf( 'https://github.com/%s/%s', self::GITHUB_USER, self::GITHUB_REPO );
+		$result->requires     = self::REQUIRES_WP;
+		$result->tested       = get_bloginfo( 'version' );
+		$result->requires_php = self::REQUIRES_PHP;
+		$result->external     = true;
+		$result->banners      = array();
+		$result->icons        = array();
 
-		if ( $release_data && ! empty( $release_data['published_at'] ) ) {
-			$res->last_updated = (string) $release_data['published_at'];
+		$download_link = self::get_plugin_info_download_link( $release_data );
+		if ( '' !== $download_link ) {
+			$result->download_link = $download_link;
 		}
 
+		if ( $release_data && ! empty( $release_data['published_at'] ) ) {
+			$result->last_updated = (string) $release_data['published_at'];
+		}
+
+		$result->sections = self::build_plugin_info_sections( $release_data, $installed_version, $version );
+
+		return $result;
+	}
+
+	/**
+	 * Build plugin information sections from parsed README content.
+	 *
+	 * @param array|null $release_data      Release data from GitHub.
+	 * @param string     $installed_version Installed plugin version.
+	 * @param string     $display_version   Version shown in the modal.
+	 * @return array
+	 */
+	private static function build_plugin_info_sections( ?array $release_data, string $installed_version, string $display_version ): array {
 		$readme = self::parse_readme();
 
-		$res->sections = array(
+		$sections = array(
 			'description' => ! empty( $readme['description'] )
 				? $readme['description']
 				: '<p>' . esc_html( self::PLUGIN_DESCRIPTION ) . '</p>',
 		);
 
 		if ( ! empty( $readme['installation'] ) ) {
-			$res->sections['installation'] = $readme['installation'];
+			$sections['installation'] = $readme['installation'];
 		}
 
 		if ( ! empty( $readme['faq'] ) ) {
-			$res->sections['faq'] = $readme['faq'];
+			$sections['faq'] = $readme['faq'];
 		}
 
 		$changelog_html = '';
-		if ( $release_data && ! empty( $release_data['body'] ) && version_compare( $installed_version, $version, '<' ) ) {
-			$changelog_html .= '<h4>' . esc_html( $version ) . '</h4>' . self::markdown_to_html( (string) $release_data['body'] );
+		if ( is_array( $release_data ) && ! empty( $release_data['body'] ) && version_compare( $installed_version, $display_version, '<' ) ) {
+			$changelog_html .= '<h4>' . esc_html( $display_version ) . '</h4>' . self::markdown_to_html( (string) $release_data['body'] );
 		}
 
 		if ( ! empty( $readme['changelog'] ) ) {
 			$changelog_html .= $readme['changelog'];
 		}
 
-		$res->sections['changelog'] = '' !== $changelog_html
+		$sections['changelog'] = ! empty( $changelog_html )
 			? $changelog_html
 			: sprintf(
 				'<p>%s</p>',
@@ -222,7 +324,52 @@ class GF_CardDAV_GitHub_Updater {
 				)
 			);
 
-		return $res;
+		return $sections;
+	}
+
+	/**
+	 * Build a small fallback payload if plugin details generation fails.
+	 *
+	 * @return stdClass
+	 */
+	private static function build_fallback_plugin_info_result(): stdClass {
+		$result               = new stdClass();
+		$result->name         = self::PLUGIN_NAME;
+		$result->slug         = self::PLUGIN_SLUG;
+		$result->plugin       = self::get_plugin_file();
+		$result->version      = defined( 'GF_CARDDAV_SERVER_VERSION' ) ? GF_CARDDAV_SERVER_VERSION : '1.0.0';
+		$result->author       = sprintf( '<a href="https://github.com/%s">%s</a>', self::GITHUB_USER, self::GITHUB_USER );
+		$result->homepage     = sprintf( 'https://github.com/%s/%s', self::GITHUB_USER, self::GITHUB_REPO );
+		$result->requires     = self::REQUIRES_WP;
+		$result->tested       = get_bloginfo( 'version' );
+		$result->requires_php = self::REQUIRES_PHP;
+		$result->external     = true;
+		$result->banners      = array();
+		$result->icons        = array();
+
+		$download_link = self::get_plugin_info_download_link();
+		if ( '' !== $download_link ) {
+			$result->download_link = $download_link;
+		}
+
+		$result->sections = array(
+			'description' => '<p>' . esc_html( self::PLUGIN_DESCRIPTION ) . '</p>',
+			'changelog'   => sprintf(
+				'<p>See <a href="https://github.com/%s/%s/releases" target="_blank">GitHub releases</a> for changelog.</p>',
+				esc_attr( self::GITHUB_USER ),
+				esc_attr( self::GITHUB_REPO )
+			),
+		);
+
+		return $result;
+	}
+
+	public static function plugin_info( $res, $action, $args ) {
+		if ( ! self::is_plugin_information_api_request( $action, $args ) ) {
+			return $res;
+		}
+
+		return self::get_safe_plugin_info_result();
 	}
 
 	public static function plugin_info_css(): void {
@@ -289,7 +436,7 @@ class GF_CardDAV_GitHub_Updater {
 	}
 
 	private static function parse_readme(): array {
-		$readme_path = WP_PLUGIN_DIR . '/' . dirname( self::PLUGIN_FILE ) . '/README.md';
+		$readme_path = WP_PLUGIN_DIR . '/' . self::get_plugin_directory() . '/README.md';
 		if ( ! file_exists( $readme_path ) ) {
 			return array();
 		}
@@ -396,11 +543,11 @@ class GF_CardDAV_GitHub_Updater {
 		unset( $upgrader );
 		global $wp_filesystem;
 
-		if ( ! isset( $hook_extra['plugin'] ) || self::PLUGIN_FILE !== $hook_extra['plugin'] ) {
+		if ( ! isset( $hook_extra['plugin'] ) || self::get_plugin_file() !== $hook_extra['plugin'] ) {
 			return $source;
 		}
 
-		$correct_folder = dirname( self::PLUGIN_FILE );
+		$correct_folder = self::get_plugin_directory();
 		$source_folder  = basename( untrailingslashit( $source ) );
 		if ( $source_folder === $correct_folder ) {
 			return $source;

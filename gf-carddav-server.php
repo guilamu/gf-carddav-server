@@ -3,7 +3,7 @@
  * Plugin Name: GF CardDAV Server
  * Plugin URI: https://github.com/guilamu/gf-carddav-server
  * Description: Exposes Gravity Forms entries as a native CardDAV address book.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Requires at least: 6.0
  * Requires PHP: 8.0
  * Author: Guilamu
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GF_CARDDAV_SERVER_VERSION', '1.0.0' );
+define( 'GF_CARDDAV_SERVER_VERSION', '1.0.1' );
 define( 'GF_CARDDAV_SERVER_FILE', __FILE__ );
 define( 'GF_CARDDAV_SERVER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GF_CARDDAV_SERVER_URL', plugin_dir_url( __FILE__ ) );
