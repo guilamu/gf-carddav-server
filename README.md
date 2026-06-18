@@ -91,6 +91,12 @@ If Guilamu Bug Reporter is installed, use the **Report a Bug** link directly fro
 
 ## Changelog
 
+### 1.1.1 - 2026-06-18
+- **Improved:** Reworked the Field Mapping card into a single 4-column CSS grid so dropdowns, remove buttons, and the add-field button line up consistently across rows.
+- **New:** Drag-and-drop reordering of mapped fields within a property (HTML5, vanilla JS, same-card only).
+- **Fix:** The "Combine with" separator row no longer wraps its label and its dropdown is fixed-width, with the custom separator input shown only when "Custom..." is selected.
+- **Fix:** The "+ Add field" control now uses the standard WordPress button style and aligns with the dropdowns above it.
+
 ### 1.1.0 - 2026-06-15
 - **New:** Map multiple Gravity Forms fields to a single vCard property with a configurable join separator (space, comma, new line, or custom).
 

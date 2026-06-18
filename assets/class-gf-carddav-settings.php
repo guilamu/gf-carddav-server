@@ -322,20 +322,46 @@ class GF_CardDAV_Settings {
         <style>
         .gf-carddav-mapping-ui{max-width:860px}
         .gf-carddav-mapping__rows{display:grid;gap:8px;margin-bottom:12px}
-        .gf-carddav-mapping__row{display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid #dcdcde;border-radius:8px;background:#fff}
-        .gf-carddav-mapping__row-label{min-width:140px;font-weight:600;padding-top:7px}
-        .gf-carddav-mapping__row-body{flex:1;display:flex;flex-direction:column;gap:6px}
-        .gf-carddav-mapping__field-row{display:flex;align-items:center;gap:8px}
-        .gf-carddav-mapping__field-row select,
-        .gf-carddav-mapping__field-row input[type="text"]{flex:1;min-width:0}
-        .gf-carddav-mapping__field-remove{flex:0 0 auto;border:0;background:transparent;cursor:pointer;font-size:18px;line-height:1;padding:4px 6px;color:#b32d2e;border-radius:4px}
-        .gf-carddav-mapping__field-remove:hover{background:#fcecec}
-        .gf-carddav-mapping__separator{display:flex;align-items:center;gap:8px;margin-top:2px;font-size:13px;color:#50575e}
-        .gf-carddav-mapping__separator select{width:auto}
-        .gf-carddav-mapping__separator input[type="text"]{width:80px}
-        .gf-carddav-mapping__add-field{display:inline;background:none;border:none;color:#2271b1;cursor:pointer;font-size:13px;padding:0;text-decoration:none}
-        .gf-carddav-mapping__add-field:hover{color:#135e96;text-decoration:underline}
-        .gf-carddav-mapping__row-remove-prop{flex:0 0 auto;align-self:flex-start;margin-top:4px}
+        .gf-carddav-mapping__row{
+            display:grid;
+            grid-template-columns:110px 20px 1fr 36px;
+            column-gap:8px;
+            row-gap:8px;
+            align-items:center;
+            padding:16px;
+            border:1px solid #c3c4c7;
+            border-radius:4px;
+            background:#fff;
+        }
+        .gf-carddav-mapping__row-label{font-weight:600;font-size:13px;line-height:1.4;color:#1d2327}
+        .gf-carddav-mapping__drag{
+            display:flex;align-items:center;justify-content:center;
+            font-size:16px;line-height:1;color:#a7aaad;cursor:grab;user-select:none
+        }
+        .gf-carddav-mapping__drag:active{cursor:grabbing}
+        .gf-carddav-mapping__field-select,
+        .gf-carddav-mapping__field-text{width:100%;min-width:0;box-sizing:border-box}
+        .gf-carddav-mapping__field-remove{
+            width:36px;height:36px;padding:0;
+            background:transparent;border:1px solid transparent;border-radius:3px;
+            color:#a7aaad;font-size:18px;line-height:1;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            transition:color 0.15s,border-color 0.15s
+        }
+        .gf-carddav-mapping__field-remove:hover{
+            color:#d63638;border-color:#d63638;background:transparent
+        }
+        .gf-carddav-mapping__separator-rule{
+            grid-column:1 / -1;border:none;border-top:1px solid #c3c4c7;margin:4px 0
+        }
+        .gf-carddav-mapping__combine-label{font-size:13px;color:#646970;white-space:nowrap}
+        .gf-carddav-mapping__combine-spacer{}
+        .gf-carddav-mapping__combine-controls{grid-column:3 / 5;display:flex;gap:8px;align-items:center;min-width:0}
+        .gf-carddav-mapping__combine-select{width:160px !important;flex:none !important;align-self:center}
+        .gf-carddav-mapping__custom-sep{flex:1;min-width:0;display:none}
+        .gf-carddav-mapping__add-field{
+            grid-column:3;justify-self:start
+        }
         .gf-carddav-mapping__add{margin-bottom:8px}
         .gf-carddav-mapping__add-select{width:100%;max-width:400px}
         </style>
@@ -426,17 +452,74 @@ class GF_CardDAV_Settings {
                         return false;
                     }
 
-                    function buildSeparatorUI(entry,mapIndex){
-                        var wrap=document.createElement('div');
-                        wrap.className='gf-carddav-mapping__separator';
+                    var lineSeq=0;
+                    var dragLineId=null;
+                    function makeLineId(){return 'l'+(++lineSeq);}
 
-                        var label=document.createElement('span');
-                        label.textContent='<?php echo esc_js(__('Combine with', 'gf-carddav-server')); ?>';
-                        wrap.appendChild(label);
+                    function readFieldIdsFromCard(card){
+                        var nodes=card.querySelectorAll('.gf-carddav-mapping__field-select, .gf-carddav-mapping__field-text');
+                        var out=[];
+                        for(var i=0;i<nodes.length;i++){out.push(nodes[i].value);}
+                        return out;
+                    }
+
+                    function getOrderedLineIds(card){
+                        var seen={},order=[];
+                        var kids=card.children;
+                        for(var i=0;i<kids.length;i++){
+                            var id=kids[i].getAttribute('data-line-id');
+                            if(id!=null && !seen[id]){seen[id]=1;order.push(id);}
+                        }
+                        return order;
+                    }
+
+                    function normalizeCol1(card,labelText){
+                        var order=getOrderedLineIds(card);
+                        for(var i=0;i<order.length;i++){
+                            var cells=card.querySelectorAll('[data-line-id="'+order[i]+'"]');
+                            var col1=cells[0];
+                            if(!col1)continue;
+                            if(i===0){
+                                col1.textContent=labelText;
+                                col1.className='gf-carddav-mapping__row-label';
+                            }else{
+                                col1.textContent='';
+                                col1.className='';
+                            }
+                        }
+                    }
+
+                    function swapGroups(card,idA,idB){
+                        if(idA===idB)return;
+                        var cellsA=card.querySelectorAll('[data-line-id="'+idA+'"]');
+                        var cellsB=card.querySelectorAll('[data-line-id="'+idB+'"]');
+                        if(!cellsA.length||!cellsB.length)return;
+                        var markerA=document.createComment('a');
+                        var markerB=document.createComment('b');
+                        cellsA[0].parentNode.insertBefore(markerA,cellsA[0]);
+                        cellsB[0].parentNode.insertBefore(markerB,cellsB[0]);
+                        for(var i=0;i<cellsA.length;i++){cellsA[i].parentNode.removeChild(cellsA[i]);}
+                        for(var j=0;j<cellsB.length;j++){cellsB[j].parentNode.removeChild(cellsB[j]);}
+                        for(var k=0;k<cellsB.length;k++){markerA.parentNode.insertBefore(cellsB[k],markerA);}
+                        for(var m=0;m<cellsA.length;m++){markerB.parentNode.insertBefore(cellsA[m],markerB);}
+                        markerA.parentNode.removeChild(markerA);
+                        markerB.parentNode.removeChild(markerB);
+                    }
+
+                    function buildCombineCells(entry,mapIndex){
+                        var labelDiv=document.createElement('div');
+                        labelDiv.className='gf-carddav-mapping__combine-label';
+                        labelDiv.textContent='<?php echo esc_js(__('Combine with', 'gf-carddav-server')); ?>';
+
+                        var spacerDiv=document.createElement('div');
+                        spacerDiv.className='gf-carddav-mapping__combine-spacer';
+
+                        var controls=document.createElement('div');
+                        controls.className='gf-carddav-mapping__combine-controls';
 
                         var sel=document.createElement('select');
+                        sel.className='gf-carddav-mapping__combine-select';
                         var isCustom=!isPresetSeparator(entry.separator);
-
                         for(var i=0;i<SEPARATOR_OPTIONS.length;i++){
                             var o=document.createElement('option');
                             o.value=SEPARATOR_OPTIONS[i].value;
@@ -445,18 +528,19 @@ class GF_CardDAV_Settings {
                             if(isCustom && SEPARATOR_OPTIONS[i].value==='gf_custom')o.selected=true;
                             sel.appendChild(o);
                         }
-                        wrap.appendChild(sel);
+                        controls.appendChild(sel);
 
                         var customInput=document.createElement('input');
                         customInput.type='text';
+                        customInput.className='gf-carddav-mapping__custom-sep';
                         customInput.value=isCustom?entry.separator:'';
-                        customInput.placeholder='<?php echo esc_js(__('separator', 'gf-carddav-server')); ?>';
-                        customInput.style.display=isCustom?'':'none';
-                        wrap.appendChild(customInput);
+                        customInput.placeholder='<?php echo esc_js(__('e.g. - or /', 'gf-carddav-server')); ?>';
+                        customInput.style.display=isCustom?'block':'none';
+                        controls.appendChild(customInput);
 
                         sel.addEventListener('change',function(){
                             if(this.value==='gf_custom'){
-                                customInput.style.display='';
+                                customInput.style.display='block';
                                 mapping[mapIndex].separator=customInput.value||'';
                             }else{
                                 customInput.style.display='none';
@@ -464,13 +548,149 @@ class GF_CardDAV_Settings {
                             }
                             syncHidden();
                         });
-
                         customInput.addEventListener('input',function(){
                             mapping[mapIndex].separator=this.value;
                             syncHidden();
                         });
 
-                        return wrap;
+                        return [labelDiv,spacerDiv,controls];
+                    }
+
+                    function buildFieldLine(entry,mapIndex,lineId,isFirst,labelText,fieldValue){
+                        var frag=document.createDocumentFragment();
+
+                        /* Column 1: vCard label (first line) or empty placeholder */
+                        var col1=document.createElement('div');
+                        if(isFirst){
+                            col1.className='gf-carddav-mapping__row-label';
+                            col1.textContent=labelText;
+                        }
+                        col1.setAttribute('data-line-id',lineId);
+                        frag.appendChild(col1);
+
+                        /* Column 2: drag handle */
+                        var handle=document.createElement('span');
+                        handle.className='gf-carddav-mapping__drag';
+                        handle.setAttribute('draggable','true');
+                        handle.setAttribute('data-line-id',lineId);
+                        handle.title='<?php echo esc_js(__('Drag to reorder', 'gf-carddav-server')); ?>';
+                        handle.textContent='\u28FF';
+                        frag.appendChild(handle);
+
+                        /* Column 3: Gravity Forms field select (or text input for categories) */
+                        var control;
+                        if(entry.vcard==='categories'){
+                            control=document.createElement('input');
+                            control.type='text';
+                            control.className='gf-carddav-mapping__field-text';
+                            control.value=fieldValue||'';
+                            control.placeholder='<?php echo esc_js(__('Enter category value', 'gf-carddav-server')); ?>';
+                            control.addEventListener('input',function(){
+                                mapping[mapIndex].field_ids=readFieldIdsFromCard(this.parentNode);
+                                syncHidden();
+                            });
+                        }else{
+                            control=buildFieldSelect(fieldValue||'');
+                            control.className='gf-carddav-mapping__field-select';
+                            control.addEventListener('change',function(){
+                                mapping[mapIndex].field_ids=readFieldIdsFromCard(this.parentNode);
+                                syncHidden();
+                            });
+                        }
+                        control.setAttribute('data-line-id',lineId);
+                        frag.appendChild(control);
+
+                        /* Column 4: remove (x) button */
+                        var removeBtn=document.createElement('button');
+                        removeBtn.type='button';
+                        removeBtn.className='gf-carddav-mapping__field-remove';
+                        removeBtn.setAttribute('data-line-id',lineId);
+                        removeBtn.innerHTML='&times;';
+                        removeBtn.title='<?php echo esc_js(__('Remove this field', 'gf-carddav-server')); ?>';
+                        frag.appendChild(removeBtn);
+
+                        /* HTML5 drag-and-drop on the handle (same-card swap only) */
+                        handle.addEventListener('dragstart',function(e){
+                            dragLineId=lineId;
+                            try{e.dataTransfer.setData('text/plain',lineId);}catch(err){}
+                            e.dataTransfer.effectAllowed='move';
+                        });
+                        handle.addEventListener('dragover',function(e){
+                            if(dragLineId && dragLineId!==lineId){
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect='move';
+                            }
+                        });
+                        handle.addEventListener('drop',function(e){
+                            e.preventDefault();
+                            e.stopPropagation();
+                            var source=dragLineId;
+                            dragLineId=null;
+                            if(!source || source===lineId)return;
+                            var card=this.parentNode;
+                            swapGroups(card,source,lineId);
+                            normalizeCol1(card,labelText);
+                            mapping[mapIndex].field_ids=readFieldIdsFromCard(card);
+                            syncHidden();
+                        });
+                        handle.addEventListener('dragend',function(){dragLineId=null;});
+
+                        /* Remove this field line */
+                        removeBtn.addEventListener('click',function(){
+                            var card=this.parentNode;
+                            var cells=card.querySelectorAll('[data-line-id="'+lineId+'"]');
+                            for(var i=0;i<cells.length;i++){cells[i].parentNode.removeChild(cells[i]);}
+                            if(getOrderedLineIds(card).length<=0){
+                                /* Last field line - remove the entire property, then
+                                   re-render so every card closure maps to the right index. */
+                                mapping.splice(mapIndex,1);
+                                renderAll();
+                                return;
+                            }
+                            normalizeCol1(card,labelText);
+                            refreshCardFooter(card,mapping[mapIndex],mapIndex,labelText);
+                            mapping[mapIndex].field_ids=readFieldIdsFromCard(card);
+                            syncHidden();
+                        });
+
+                        return frag;
+                    }
+
+                    function refreshCardFooter(card,entry,mapIndex,labelText){
+                        var old=card.querySelectorAll('.gf-carddav-mapping__footer');
+                        for(var i=0;i<old.length;i++){old[i].parentNode.removeChild(old[i]);}
+
+                        var lineCount=getOrderedLineIds(card).length;
+
+                        if(lineCount>=2){
+                            var hr=document.createElement('hr');
+                            hr.className='gf-carddav-mapping__separator-rule gf-carddav-mapping__footer';
+                            card.appendChild(hr);
+
+                            var combine=buildCombineCells(entry,mapIndex);
+                            combine[0].className+=' gf-carddav-mapping__footer';
+                            combine[1].className+=' gf-carddav-mapping__footer';
+                            combine[2].className+=' gf-carddav-mapping__footer';
+                            card.appendChild(combine[0]);
+                            card.appendChild(combine[1]);
+                            card.appendChild(combine[2]);
+                        }
+
+                        var addFieldBtn=document.createElement('button');
+                        addFieldBtn.type='button';
+                        addFieldBtn.className='button gf-carddav-mapping__add-field gf-carddav-mapping__footer';
+                        addFieldBtn.textContent='+ <?php echo esc_js(__('Add field', 'gf-carddav-server')); ?>';
+                        addFieldBtn.addEventListener('click',function(){
+                            var newId=makeLineId();
+                            var newLine=buildFieldLine(mapping[mapIndex],mapIndex,newId,false,labelText,'');
+                            var firstFooter=card.querySelector('.gf-carddav-mapping__footer');
+                            if(firstFooter){card.insertBefore(newLine,firstFooter);}
+                            else{card.appendChild(newLine);}
+                            refreshCardFooter(card,mapping[mapIndex],mapIndex,labelText);
+                            mapping[mapIndex].field_ids=readFieldIdsFromCard(card);
+                            syncHidden();
+                        });
+                        card.appendChild(addFieldBtn);
                     }
 
                     function renderRow(entry,mapIndex){
@@ -480,81 +700,17 @@ class GF_CardDAV_Settings {
                         var row=document.createElement('div');
                         row.className='gf-carddav-mapping__row';
 
-                        /* Left label */
-                        var label=document.createElement('div');
-                        label.className='gf-carddav-mapping__row-label';
-                        label.textContent=catDef.label;
-                        row.appendChild(label);
-
-                        /* Body: stacked field rows + separator + add-field link */
-                        var body=document.createElement('div');
-                        body.className='gf-carddav-mapping__row-body';
-
+                        var labelText=catDef.label;
                         var fieldIds=entry.field_ids;
                         if(!fieldIds.length)fieldIds=[''];
 
                         for(var f=0;f<fieldIds.length;f++){
-                            (function(fieldIndex){
-                                var fieldRow=document.createElement('div');
-                                fieldRow.className='gf-carddav-mapping__field-row';
-
-                                if(entry.vcard==='categories'){
-                                    var inp=document.createElement('input');
-                                    inp.type='text';
-                                    inp.value=fieldIds[fieldIndex]||'';
-                                    inp.placeholder='<?php echo esc_js(__('Enter category value', 'gf-carddav-server')); ?>';
-                                    inp.addEventListener('input',function(){
-                                        mapping[mapIndex].field_ids[fieldIndex]=this.value;
-                                        syncHidden();
-                                    });
-                                    fieldRow.appendChild(inp);
-                                }else{
-                                    var sel=buildFieldSelect(fieldIds[fieldIndex]||'');
-                                    sel.addEventListener('change',function(){
-                                        mapping[mapIndex].field_ids[fieldIndex]=this.value;
-                                        syncHidden();
-                                    });
-                                    fieldRow.appendChild(sel);
-                                }
-
-                                /* Per-field remove (×) button */
-                                var removeBtn=document.createElement('button');
-                                removeBtn.type='button';
-                                removeBtn.className='gf-carddav-mapping__field-remove';
-                                removeBtn.innerHTML='&times;';
-                                removeBtn.title='<?php echo esc_js(__('Remove this field', 'gf-carddav-server')); ?>';
-                                removeBtn.addEventListener('click',function(){
-                                    if(mapping[mapIndex].field_ids.length<=1){
-                                        /* Last field — remove the entire property */
-                                        mapping.splice(mapIndex,1);
-                                    }else{
-                                        mapping[mapIndex].field_ids.splice(fieldIndex,1);
-                                    }
-                                    renderAll();
-                                });
-                                fieldRow.appendChild(removeBtn);
-
-                                body.appendChild(fieldRow);
-                            })(f);
+                            var lineId=makeLineId();
+                            var lineFrag=buildFieldLine(entry,mapIndex,lineId,f===0,labelText,fieldIds[f]||'');
+                            row.appendChild(lineFrag);
                         }
 
-                        /* Separator selector (only when 2+ fields) */
-                        if(entry.field_ids.length>=2){
-                            body.appendChild(buildSeparatorUI(entry,mapIndex));
-                        }
-
-                        /* "+ Add field" link */
-                        var addFieldBtn=document.createElement('button');
-                        addFieldBtn.type='button';
-                        addFieldBtn.className='gf-carddav-mapping__add-field';
-                        addFieldBtn.textContent='+ <?php echo esc_js(__('Add field', 'gf-carddav-server')); ?>';
-                        addFieldBtn.addEventListener('click',function(){
-                            mapping[mapIndex].field_ids.push('');
-                            renderAll();
-                        });
-                        body.appendChild(addFieldBtn);
-
-                        row.appendChild(body);
+                        refreshCardFooter(row,entry,mapIndex,labelText);
                         rowsContainer.appendChild(row);
                     }
 
