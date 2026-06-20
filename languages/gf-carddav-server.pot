@@ -246,5 +246,5 @@ msgid "First letter upper case"
 msgstr ""
 
 #: assets/class-gf-carddav-settings.php:411
-msgid "First letters Upper Case"
+msgid "First Letters Upper Case"
 msgstr ""

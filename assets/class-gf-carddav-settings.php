@@ -415,7 +415,7 @@ class GF_CardDAV_Settings {
                 {value:'upper',   label:'<?php echo esc_js(__('UPPER CASE', 'gf-carddav-server')); ?>'},
                 {value:'lower',   label:'<?php echo esc_js(__('lower case', 'gf-carddav-server')); ?>'},
                 {value:'ucfirst', label:'<?php echo esc_js(__('First letter upper case', 'gf-carddav-server')); ?>'},
-                {value:'ucwords', label:'<?php echo esc_js(__('First letters Upper Case', 'gf-carddav-server')); ?>'}
+                {value:'ucwords', label:'<?php echo esc_js(__('First Letters Upper Case', 'gf-carddav-server')); ?>'}
             ];
 
             window.GFCardDAVMapping={
