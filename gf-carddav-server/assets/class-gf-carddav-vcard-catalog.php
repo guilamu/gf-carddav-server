@@ -264,7 +264,7 @@ class GF_CardDAV_VCard_Catalog {
                 'key'            => $key,
                 'vcard_property' => $field['vcard_property'],
                 'vcard_index'    => $field['vcard_index'],
-                'label'          => __($field['label'], 'gf-carddav-server'),
+                'label'          => $field['label'],
                 'group'          => $field['group'],
             );
         }
