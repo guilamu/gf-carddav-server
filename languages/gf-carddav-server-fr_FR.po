@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: GF CardDAV Server 1.1.1\n"
+"Project-Id-Version: GF CardDAV Server 1.1.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-18 00:00+0000\n"
-"PO-Revision-Date: 2026-06-18 11:57+0200\n"
+"PO-Revision-Date: 2026-06-20 08:50+0200\n"
 "Last-Translator: GitHub Copilot\n"
 "Language-Team: French\n"
 "Language: fr_FR\n"
@@ -175,3 +175,18 @@ msgstr "Signaler un bug"
 
 msgid "Report a Bug (install Bug Reporter)"
 msgstr "Signaler un bug (installer Bug Reporter)"
+
+msgid "None"
+msgstr "Aucune"
+
+msgid "UPPER CASE"
+msgstr "MAJUSCULE"
+
+msgid "lower case"
+msgstr "minuscule"
+
+msgid "First letter upper case"
+msgstr "Première lettre en majuscule"
+
+msgid "First letters Upper Case"
+msgstr "Première lettre de chaque mot en majuscule"

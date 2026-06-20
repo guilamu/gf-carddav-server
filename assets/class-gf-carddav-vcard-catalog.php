@@ -12,14 +12,14 @@ class GF_CardDAV_VCard_Catalog {
             'vcard_index'    => 0,
             'label'   => 'Last name',
             'group'   => 'identity',
-            'normalize' => 'normalize_last_name',
+            'normalize' => null,
         ),
         'name_given' => array(
             'vcard_property' => 'N',
             'vcard_index'    => 1,
             'label'   => 'First name',
             'group'   => 'identity',
-            'normalize' => 'normalize_first_name',
+            'normalize' => null,
         ),
         'nickname' => array(
             'vcard_property' => 'NICKNAME',

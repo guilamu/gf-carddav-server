@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: GF CardDAV Server 1.1.1\n"
+"Project-Id-Version: GF CardDAV Server 1.1.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-18 00:00+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -227,4 +227,24 @@ msgstr ""
 
 #: gf-carddav-server.php:69
 msgid "Report a Bug (install Bug Reporter)"
+msgstr ""
+
+#: assets/class-gf-carddav-settings.php:407
+msgid "None"
+msgstr ""
+
+#: assets/class-gf-carddav-settings.php:408
+msgid "UPPER CASE"
+msgstr ""
+
+#: assets/class-gf-carddav-settings.php:409
+msgid "lower case"
+msgstr ""
+
+#: assets/class-gf-carddav-settings.php:410
+msgid "First letter upper case"
+msgstr ""
+
+#: assets/class-gf-carddav-settings.php:411
+msgid "First letters Upper Case"
 msgstr ""

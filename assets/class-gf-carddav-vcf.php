@@ -51,9 +51,19 @@ class GF_CardDAV_VCF {
 
             $separator = isset($map_entry['separator']) ? (string) $map_entry['separator'] : ' ';
 
+            // Apply per-field case transformation from user settings.
+            $case_transforms = array();
+            if (isset($map_entry['case_transforms']) && is_array($map_entry['case_transforms'])) {
+                $case_transforms = $map_entry['case_transforms'];
+            }
+
             $parts = array();
-            foreach ($field_ids as $fid) {
+            foreach ($field_ids as $fi => $fid) {
                 $v = $this->get_entry_value($entry, (string) $fid);
+                $ct = isset($case_transforms[$fi]) ? $case_transforms[$fi] : '';
+                if ($v !== '' && $ct !== '') {
+                    $v = $this->apply_case_transform($v, $ct);
+                }
                 if ($v !== '') {
                     $parts[] = $v;
                 }
@@ -174,41 +184,56 @@ class GF_CardDAV_VCF {
         );
     }
 
-    private function normalize_last_name($value) {
+    /**
+     * Apply a case transformation to a value.
+     *
+     * @param string $value The input value.
+     * @param string $transform One of: 'upper', 'lower', 'ucfirst', 'ucwords'.
+     * @return string
+     */
+    private function apply_case_transform($value, $transform) {
         $value = trim((string) $value);
 
         if ($value === '') {
             return '';
         }
 
-        return mb_strtoupper($value, 'UTF-8');
+        switch ($transform) {
+            case 'upper':
+                return mb_strtoupper($value, 'UTF-8');
+
+            case 'lower':
+                return mb_strtolower($value, 'UTF-8');
+
+            case 'ucfirst':
+                $first_char = mb_substr($value, 0, 1, 'UTF-8');
+                $rest       = mb_substr($value, 1, null, 'UTF-8');
+                return mb_strtoupper($first_char, 'UTF-8') . $rest;
+
+            case 'ucwords':
+                $parts = preg_split('/(\s+)/u', $value, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+                if (! is_array($parts)) {
+                    return $value;
+                }
+
+                foreach ($parts as $index => $part) {
+                    if ($part === '' || preg_match('/^\s+$/u', $part)) {
+                        continue;
+                    }
+
+                    $first_char = mb_substr($part, 0, 1, 'UTF-8');
+                    $rest       = mb_substr($part, 1, null, 'UTF-8');
+                    $parts[$index] = mb_strtoupper($first_char, 'UTF-8') . $rest;
+                }
+
+                return implode('', $parts);
+
+            default:
+                return $value;
+        }
     }
 
-    private function normalize_first_name($value) {
-        $value = trim((string) $value);
-
-        if ($value === '') {
-            return '';
-        }
-
-        $parts = preg_split('/([\s\-\']+)/u', mb_strtolower($value, 'UTF-8'), -1, PREG_SPLIT_DELIM_CAPTURE);
-
-        if (! is_array($parts)) {
-            return $value;
-        }
-
-        foreach ($parts as $index => $part) {
-            if ($part === '' || preg_match('/^[\s\-\']+$/u', $part)) {
-                continue;
-            }
-
-            $first_char = mb_substr($part, 0, 1, 'UTF-8');
-            $rest       = mb_substr($part, 1, null, 'UTF-8');
-            $parts[$index] = mb_strtoupper($first_char, 'UTF-8') . $rest;
-        }
-
-        return implode('', $parts);
-    }
 
     private function normalize_phone($value) {
         $value  = trim((string) $value);

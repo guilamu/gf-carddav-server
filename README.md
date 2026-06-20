@@ -91,6 +91,12 @@ If Guilamu Bug Reporter is installed, use the **Report a Bug** link directly fro
 
 ## Changelog
 
+### 1.1.2 - 2026-06-20
+- **New:** Add per-field case transformation dropdown (None, UPPER CASE, lower case, First letter upper case, First letters Upper Case) for mapped fields.
+- **Removed:** Removed hardcoded case normalizations (First letter uppercase for first name, UPPERCASE for last name).
+- **Fix:** Fixed spacing in the "Combine with" separator so "Space" works correctly.
+- **Improved:** Redesigned field mapping card footer with a separate cream background and aligned layout.
+
 ### 1.1.1 - 2026-06-18
 - **Improved:** Reworked the Field Mapping card into a single 4-column CSS grid so dropdowns, remove buttons, and the add-field button line up consistently across rows.
 - **New:** Drag-and-drop reordering of mapped fields within a property (HTML5, vanilla JS, same-card only).
