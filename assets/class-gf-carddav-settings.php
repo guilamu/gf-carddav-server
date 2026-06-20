@@ -386,8 +386,15 @@ class GF_CardDAV_Settings {
         .gf-carddav-mapping__combine-controls{grid-column:3 / 6;display:flex;gap:8px;align-items:center;min-width:0}
         .gf-carddav-mapping__combine-select{width:160px !important;flex:none !important;align-self:center}
         .gf-carddav-mapping__custom-sep{flex:1;min-width:0;display:none}
+        .gf-carddav-mapping__add-field-wrap{
+            grid-column:1 / -1;
+            padding:8px 0 4px 0;
+            display:grid;
+            grid-template-columns:110px 20px 1fr 180px 36px;
+            column-gap:8px
+        }
         .gf-carddav-mapping__add-field{
-            grid-column:3 / 5;justify-self:start
+            grid-column:3;justify-self:start
         }
         .gf-carddav-mapping__add{margin-bottom:8px}
         .gf-carddav-mapping__add-select{width:100%;max-width:400px}
@@ -741,6 +748,8 @@ class GF_CardDAV_Settings {
                             footerWrap.appendChild(combine[2]);
                         }
 
+                        var addFieldWrap=document.createElement('div');
+                        addFieldWrap.className='gf-carddav-mapping__add-field-wrap gf-carddav-mapping__footer';
                         var addFieldBtn=document.createElement('button');
                         addFieldBtn.type='button';
                         addFieldBtn.className='button gf-carddav-mapping__add-field';
@@ -756,7 +765,8 @@ class GF_CardDAV_Settings {
                             mapping[mapIndex].case_transforms=readCaseTransformsFromCard(card);
                             syncHidden();
                         });
-                        footerWrap.appendChild(addFieldBtn);
+                        addFieldWrap.appendChild(addFieldBtn);
+                        card.appendChild(addFieldWrap);
                         card.appendChild(footerWrap);
                     }
 

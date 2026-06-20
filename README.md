@@ -91,6 +91,9 @@ If Guilamu Bug Reporter is installed, use the **Report a Bug** link directly fro
 
 ## Changelog
 
+### 1.1.3 - 2026-06-20
+- **Fix:** Moved the "+ Add field" button out of the "Combine with" footer section into the field-rows section, and aligned it vertically with the mapped field dropdowns.
+
 ### 1.1.2 - 2026-06-20
 - **New:** Add per-field case transformation dropdown (None, UPPER CASE, lower case, First letter upper case, First letters Upper Case) for mapped fields.
 - **Removed:** Removed hardcoded case normalizations (First letter uppercase for first name, UPPERCASE for last name).
