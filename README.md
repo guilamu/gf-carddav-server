@@ -91,6 +91,9 @@ If Guilamu Bug Reporter is installed, use the **Report a Bug** link directly fro
 
 ## Changelog
 
+### 1.1.5 - 2026-06-30
+- **Fix:** Removed nested folder.
+
 ### 1.1.4 - 2026-06-20
 - **Fix:** Fixed translation support for settings page elements, layout labels, and custom vCard properties.
 
